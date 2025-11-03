@@ -1,4 +1,4 @@
-const DEFAULT_SITES = ['chatgpt.com', 'chat.deepseek.com', 'claude.ai'];
+const DEFAULT_SITES = ['*.chatgpt.com', '*.deepseek.com', '*.claude.ai'];
 const emojiRegex = /\p{Extended_Pictographic}/u;
 
 const unicodeDatabase = {
@@ -146,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function normalizeDomain(input) {
     let value = String(input || '').trim().toLowerCase();
     if (!value) return '';
+    value = value.replace(/\s+/g, '');
     value = value.replace(/^[a-z]+:\/\//, '');
     value = value.replace(/\/.*/, '');
     while (value.endsWith('.')) value = value.slice(0, -1);

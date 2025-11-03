@@ -1,6 +1,6 @@
 /* eslint-disable prefer-rest-params */
-(function() {
-  const DEFAULT_SITES = ['chatgpt.com', 'chat.deepseek.com', 'claude.ai'];
+(function () {
+  const DEFAULT_SITES = ['*.chatgpt.com', '*.deepseek.com', '*.claude.ai'];
   const emojiRegex = /\p{Extended_Pictographic}/u;
 
   const unicodeDatabase = {
@@ -66,7 +66,6 @@
     siteAllowlist: DEFAULT_SITES.slice()
   };
   let activeForPage = false;
-  updateActivation();
 
   chrome.storage.local.get(
     ['stats', 'removeEmojis', 'removeExtraSpaces', 'siteAllowlist'],
@@ -102,6 +101,7 @@
   function sanitizeDomain(input) {
     let value = String(input || '').trim().toLowerCase();
     if (!value) return '';
+    value = value.replace(/\s+/g, '');
     value = value.replace(/^[a-z]+:\/\//, '');
     value = value.replace(/\/.*/, '');
     while (value.endsWith('.')) value = value.slice(0, -1);
@@ -109,12 +109,39 @@
     return value;
   }
 
+  const domainPatternCache = new Map();
+
+  function escapeRegExp(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function matchesSitePattern(hostname, pattern) {
+    const host = String(hostname || '').toLowerCase().replace(/\s+/g, '').replace(/\.+$/, '');
+    let normalized = String(pattern || '').toLowerCase().replace(/\s+/g, '').replace(/\.+$/, '');
+    if (!host || !normalized) return false;
+    if (normalized === '*') return true;
+    if (normalized.startsWith('*.') && normalized.indexOf('*', 1) === -1) {
+      const suffix = normalized.slice(2);
+      if (!suffix) return true;
+      return host === suffix || host.endsWith(`.${suffix}`);
+    }
+    if (!normalized.includes('*')) {
+      return host === normalized || host.endsWith(`.${normalized}`);
+    }
+    let regex = domainPatternCache.get(normalized);
+    if (!regex) {
+      const escaped = normalized.split('*').map(escapeRegExp).join('.*');
+      regex = new RegExp(`^${escaped}$`, 'i');
+      domainPatternCache.set(normalized, regex);
+    }
+    return regex.test(host);
+  }
+
+  updateActivation();
+
   function updateActivation() {
     const hostname = location.hostname.toLowerCase();
-    activeForPage = settings.siteAllowlist.some(domain => {
-      if (!domain) return false;
-      return hostname === domain || hostname.endsWith(`.${domain}`);
-    });
+    activeForPage = settings.siteAllowlist.some(pattern => matchesSitePattern(hostname, pattern));
   }
 
   function formatCodePoint(cp) {
@@ -221,7 +248,7 @@
         badge.style.opacity = '0';
         badge.addEventListener('transitionend', () => badge.remove(), { once: true });
       }, 800);
-    } catch {}
+    } catch { }
   }
 
   function shouldRemove(cp, char) {
@@ -281,9 +308,25 @@
     return total;
   }
 
+  function getSelectedText() {
+    const selection = window.getSelection?.();
+    const text = selection?.toString() || '';
+    if (text) return text;
+    const active = document.activeElement;
+    if (!active) return '';
+    if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+      const value = active.value || '';
+      if (typeof active.selectionStart === 'number' && typeof active.selectionEnd === 'number') {
+        return value.slice(active.selectionStart, active.selectionEnd);
+      }
+      return value;
+    }
+    return '';
+  }
+
   document.addEventListener('copy', e => {
     if (!activeForPage) return;
-    const sel = window.getSelection?.().toString() || '';
+    const sel = getSelectedText();
     if (!sel) return;
 
     const removals = new Map();
@@ -336,6 +379,7 @@
         changes.siteAllowlist.newValue,
         { sourceWasArray: Array.isArray(changes.siteAllowlist.newValue) }
       );
+      domainPatternCache.clear();
       updateActivation();
     }
   });
