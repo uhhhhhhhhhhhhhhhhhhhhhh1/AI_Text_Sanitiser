@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI_Text_Sanitiser</title>
+  <style>
+    body { font-family: sans-serif; padding: 12px; width: 320px; }
+    .muted { color: #666; font-size: 12px; }
+    .muted.small { font-size: 11px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 6px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background-color: #f2f2f2; cursor: default; }
+    #resetBtn { margin-top: 10px; width: 100%; padding: 6px; background-color: #dc3545; border: none; color: white; font-weight: bold; border-radius: 4px; cursor: pointer; }
+    #resetBtn:hover { background-color: #c82333; }
+    .section-title { font-size: 13px; font-weight: 700; margin: 12px 0 6px; }
+    label.switch { display: flex; align-items: center; gap: 8px; margin-top: 6px; cursor: pointer; font-size: 13px; }
+    label.switch input { transform: scale(1.1); }
+    .site-list { list-style: none; padding: 0; margin: 6px 0 0; max-height: 140px; overflow-y: auto; }
+    .site-list li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 4px; font-size: 13px; }
+    .site-list button { border: none; background: #f0f0f0; border-radius: 3px; padding: 2px 6px; cursor: pointer; font-size: 12px; }
+    .site-list button:hover { background: #e0e0e0; }
+    .site-form { display: flex; gap: 8px; margin-top: 6px; }
+    .site-form input { flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+    .site-form button { padding: 4px 10px; border: none; background: #007bff; color: #fff; border-radius: 4px; cursor: pointer; font-size: 13px; }
+    .site-form button:hover { background: #0069d9; }
+  </style>
+</head>
+<body>
+  <h2 style="margin: 0 0 8px">AI_Text_Sanitiser</h2>
+  <div class="muted">Copies are cleaned automatically on supported AI chat sites. Use the options below to fine-tune what is removed.</div>
+
+  <div class="section-title">Cleaning Options</div>
+  <label class="switch">
+    <input id="removeEmojiToggle" type="checkbox">
+    <span>Remove emoji characters</span>
+  </label>
+  <div class="muted small">When off, emojis stay in your copies and are hidden from the stats table.</div>
+  <label class="switch">
+    <input id="removeSpacesToggle" type="checkbox">
+    <span>Collapse adjacent spaces</span>
+  </label>
+
+  <div class="section-title">Sites</div>
+  <ul id="siteList" class="site-list"></ul>
+  <form id="siteForm" class="site-form" autocomplete="off">
+    <input id="siteInput" type="text" placeholder="example.com">
+    <button type="submit">Add</button>
+  </form>
+
+  <div class="section-title">Unicode Stats</div>
+  <div class="muted small">Counts reflect characters removed on allowed sites. Emoji rows are hidden when emoji removal is off.</div>
+
+  <table id="statsTable">
+    <thead>
+      <tr>
+        <th>Code</th>
+        <th>Character</th>
+        <th>Category</th>
+        <th>Count</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="4" class="muted">Loading...</td></tr>
+    </tbody>
+  </table>
+  <button id="resetBtn">Reset Stats</button>
+
+  <script src="popup.js"></script>
+</body>
+</html>
