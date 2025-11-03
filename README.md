@@ -1,73 +1,99 @@
-# AI Text Chat Sanitiser
-Did you know, the text you copy from ChatGPT, Claude, Copilot, Gemini, and Deepseek contains invisible hidden characters that could confuse your apps, or trigger ai-detection services?
+# 🧹 AI Text Chat Sanitiser
 
-This is a simple chrome extension to automatically sanitise text copied from popular AI chat apps (or any site, check the settings). The app stores a persistent list of sanitised characters (and attempts to categorise them) so you know exactly what it's removing, and understand what 'fingerprints' certain services might be including.
+Did you know the text you copy from **ChatGPT, Claude, Copilot, Gemini, or Deepseek** often includes *invisible Unicode characters*?  
+These can confuse applications, cause formatting issues, or even act as subtle **AI “fingerprints”** detectable by automated systems.
 
-# Features
-Worried about 'fingerprints' exposing your AI use? A computer nerd who hates having unidentified whitespace and unicode characters in your text? Here's my solution! When you copy any text on a site in the list, the extension will 'scrub' the copied text of:
-- Non-standard Unicode characters
-- Zero-width Characters
-- Directional Marks
-- Non-latin characters
-- Diacritics, diacritic joiners, variation selectors
-- (Optionally) Emojis
-_Configuring this list, and adding exceptions are planned features_
+**AI Text Chat Sanitiser** is a lightweight Chrome extension that automatically cleans text you copy from popular AI chat sites (or any site you choose).  
+It logs every sanitised character — and attempts to categorise them — so you can see *exactly* what’s being removed and understand what metadata might be hiding in your clipboard.
 
 ---
 
-I'll try adding this to the chrome store for fun at some point, until then:
-# Installation Instructions from GitHub (no code experience needed)
-## 1) Get the extension files from GitHub
-1. Open the project’s GitHub page in your browser.
-2. Click the green **Code** button → **Download ZIP**.
-3. When the download finishes, extract/unzip the file.
-4. Move that folder to a safe place that is unlikely to change (perhaps a folder in your C: drive).
+## ✨ Features
 
-## 2) Open Chrome’s Extensions page
-1. In Chrome’s address bar, go to: `chrome://extensions/`
-2. Turn on **Developer mode** (top-right toggle).
+Whether you’re worried about **AI-detection “fingerprints”** or simply hate stray invisible characters cluttering your text, this extension has you covered.
 
-## 3) Load the unpacked extension
-1. Click **Load unpacked** (top-left).
-2. In the file picker, select the project folder you extracted in step 1.
+When you copy text on a monitored site, the extension automatically removes:
+- Non-standard Unicode characters  
+- Zero-width and hidden joining characters  
+- Directional and bidirectional marks  
+- Non-Latin characters and symbols  
+- Diacritics, variation selectors, and combining marks  
+- (Optional) Emoji  
+
+> ⚙️ Configuration and per-site exception lists are planned features.
+
+---
+
+## 🧭 Installation (from GitHub – no coding required)
+
+### 1️⃣ Download the extension files
+1. Open the project’s GitHub page.  
+2. Click the green **Code** button → **Download ZIP**.  
+3. Once downloaded, **extract/unzip** the file.  
+4. Move the extracted folder somewhere stable (e.g. `C:\Extensions\AI_Chat_Sanitiser`).
+
+---
+
+### 2️⃣ Enable Developer Mode in Chrome
+1. Open a new tab and visit `chrome://extensions/`.  
+2. Toggle **Developer mode** (top-right corner).
+
+---
+
+### 3️⃣ Load the unpacked extension
+1. Click **Load unpacked** (top-left).  
+2. Select the folder you extracted in step 1.  
 3. Click **Select Folder** (Windows/Linux) or **Open** (macOS).
 
-Chrome will add **AI_Chat_Sanitiser** to your extensions list. If you see a yellow warning banner about permissions, that’s normal for developer-loaded extensions.
-
-## 4) (Optional) Pin it to your toolbar
-1. Click the **puzzle piece** icon (Extensions) at the top-right of Chrome.
-2. Click the **pin** next to **AI_Chat_Sanitiser** so it’s easy to access.
+Chrome will install **AI_Chat_Sanitiser**.  
+A yellow warning about permissions is normal for local (unpacked) extensions.
 
 ---
 
-# Using the extension
-* Click the extension’s icon to open it.
-* Currently, all the settings and configuration are on the same page!
-* You should see a table of which characters have been removed during the operation.
+### 4️⃣ (Optional) Pin it to your toolbar
+1. Click the **puzzle piece** icon (Extensions) at the top-right.  
+2. Pin **AI_Chat_Sanitiser** for quick access.
 
 ---
 
-## Updating to a newer version later
-Because this is a manual (unpacked) install, you update by replacing the folder:
-1. Repeat **Step 1** to **download the new ZIP** from GitHub and extract it.
-2. Replace the folder in the safe place you saved it at the end of **Step 1**.
-4. Close and re-open Chrome to refresh the extension.
-5. If you used the extension’s options, re-check them after updating.
-
-Following these steps carefully shouldn't wipe your stats.
-*(The “Update” button on `chrome://extensions/` does not fetch new GitHub ZIPs; it only refreshes already-loaded unpacked folders.)*
+## 🧰 Using the Extension
+- Click the extension’s icon to open it.  
+- All current settings and logs are displayed on one page.  
+- You’ll see a live table showing which characters were removed — and why.
 
 ---
 
-## Common issues & quick fixes
-* **“Load unpacked” button is missing**
-  Turn on **Developer mode** at the top-right of `chrome://extensions/`.
-* **“Manifest file is missing or unreadable”**
-  You probably selected the ZIP itself or the wrong folder. Make sure you select the **unpacked folder** that contains a `manifest.json` (or its `dist/build` folder that contains it).
-* **“This extension may be corrupted”**
-  Click **Repair** if offered, or remove and re-load the folder via **Load unpacked**.
-* **The icon appears but nothing happens**
-  Refresh the page you’re testing, close and reopen Chrome, make sure the site you're trying to use it on has been added to its list.
+## 🔄 Updating to a Newer Version
+Manual installs don’t auto-update. To upgrade:
+1. Redownload the latest ZIP from GitHub and extract it.  
+2. Replace the old folder in your saved location with the new one.  
+3. Restart Chrome to refresh the extension.  
+4. Recheck your settings if you had modified any.
 
-* **Microsoft Edge / Brave / Chromium**
-  Steps are the same. Use `edge://extensions/` or `brave://extensions/` instead of `chrome://extensions/`.
+> 💡 Updating this way **won’t wipe your stats**, since Chrome preserves storage when you keep the same folder and extension ID.  
+> The **Update** button on `chrome://extensions/` only refreshes existing files — it doesn’t pull from GitHub.
+
+---
+
+## 🧯 Common Issues & Fixes
+
+| Problem | Solution |
+|----------|-----------|
+| **“Load unpacked” button missing** | Turn on **Developer mode** at the top-right of `chrome://extensions/`. |
+| **“Manifest file is missing or unreadable”** | You selected the ZIP itself or wrong folder. Load the folder containing `manifest.json`. |
+| **“This extension may be corrupted”** | Click **Repair**, or remove and reload via **Load unpacked**. |
+| **The icon appears but nothing happens** | Refresh the page, restart Chrome, and make sure the site is in your sanitisation list. |
+| **Using Edge / Brave / Chromium** | Use `edge://extensions/` or `brave://extensions/` instead — same process applies. |
+
+---
+
+## 💡 Coming Soon
+- Configurable removal categories (whitespace, zero-width, diacritics, emoji, etc.)  
+- Per-site and per-character exceptions  
+- Export/import of sanitisation logs  
+
+---
+
+### 🧩 Feedback & Contributions
+This is a small personal project made for fun and friends, but contributions, bug reports, or improvement ideas are welcome.
+If you discover characters that *shouldn’t* be removed (or ones that slip through), please open an issue or pull request on GitHub.
