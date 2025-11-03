@@ -57,7 +57,9 @@ A yellow warning about permissions is normal for local (unpacked) extensions.
 ---
 
 ## 🧰 Using the Extension
-- Click the extension’s icon to open it.  
+- Click the extension’s icon to open it, and if your site of choice isn't listed, add it.
+- Refresh your chrome page to make sure the extension has loaded, and copy any text. A pop-up will appear in the bottom right telling you if any characters would removed, and how many.
+- <img width="350" height="260" alt="image" src="https://github.com/user-attachments/assets/c227e610-b212-4025-96f4-82ad5d7eb76a" />
 - All current settings and logs are displayed on one page.  
 - You’ll see a live table showing which characters were removed — and why.
 
