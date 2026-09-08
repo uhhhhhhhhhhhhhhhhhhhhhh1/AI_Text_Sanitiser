@@ -20,7 +20,8 @@ When you copy text on a monitored site, the extension automatically removes:
 - Diacritics, variation selectors, and combining marks  
 - (Optional) Emoji  
 - (Optional) AI Citation markers (e.g., `[1]`, `[cite: 123]`) from Gemini, ChatGPT, and others.
-- **Programmatic Copy Support:** Intercepts "Copy" buttons on sites like **Gemini**, ChatGPT, and Claude.
+- **Programmatic Copy Support:** Intercepts "Copy" buttons on sites like **Gemini**, ChatGPT, and Claude. Robust against framework overrides (e.g. Angular/Lit polyfills).
+- **Rich Text Support:** Cleans both plain text and HTML payloads, ensuring emojis and citations stay removed even when pasting into rich text editors like Google Docs.
 
 > ⚙️ Configuration and per-site exception lists are planned features.
 

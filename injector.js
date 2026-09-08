@@ -74,8 +74,6 @@
    * Reports removals back to the isolated world.
    */
   function reportRemovals(removals, originalText, cleanedText) {
-    if (removals.size === 0 && originalText === cleanedText) return;
-
     const removalsObj = {};
     for (const [key, value] of removals.entries()) {
       removalsObj[key] = value;
@@ -84,44 +82,189 @@
     window.postMessage({
       type: 'AI_TEXT_SANITISER_REMOVALS',
       removals: removalsObj,
-      isCleaned: true
+      isCleaned: cleanedText !== originalText
     }, '*');
   }
 
-  // Intercept navigator.clipboard.writeText
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    const originalWriteText = navigator.clipboard.writeText;
-    navigator.clipboard.writeText = function (text) {
-      let targetText = text;
-      try {
-        if (settings.activeForPage) {
-          const { cleaned, removals } = sanitize(text);
-          reportRemovals(removals, text, cleaned);
-          targetText = cleaned;
+  /**
+   * Replaces a function on an object with a Proxy to intercept calls.
+   * @param {Object} targetObj - The object containing the function.
+   * @param {string} funcName - The name of the function to patch.
+   * @param {Function} applyHandler - The interception logic.
+   */
+  function patchFunction(targetObj, funcName, applyHandler) {
+    if (!targetObj || typeof targetObj[funcName] !== 'function') return;
+    if (targetObj[funcName].__ai_patched) return;
+
+    const originalFunc = targetObj[funcName];
+    const proxy = new Proxy(originalFunc, {
+      apply: function(target, thisArg, argumentsList) {
+        try {
+          return applyHandler(target, thisArg, argumentsList);
+        } catch (err) {
+          console.error(`AI Text Sanitiser: Error in ${funcName} intercept`, err);
+          return Reflect.apply(target, thisArg, argumentsList);
         }
-      } catch (err) {
-        console.error('AI Text Sanitiser: Error during writeText interception', err);
       }
-      return originalWriteText.apply(navigator.clipboard, [targetText]);
-    };
+    });
+
+    try {
+      Object.defineProperty(proxy, '__ai_patched', { value: true, enumerable: false });
+      proxy.toString = function() { return originalFunc.toString(); };
+    } catch (e) {}
+
+    targetObj[funcName] = proxy;
   }
 
-  // Intercept DataTransfer.prototype.setData (used in 'copy' events)
-  if (typeof DataTransfer !== 'undefined' && DataTransfer.prototype.setData) {
-    const originalSetData = DataTransfer.prototype.setData;
-    DataTransfer.prototype.setData = function (type, value) {
-      let targetValue = value;
-      try {
-        if (settings.activeForPage && type === 'text/plain') {
-          const { cleaned, removals } = sanitize(value);
-          reportRemovals(removals, value, cleaned);
-          targetValue = cleaned;
-        }
-      } catch (err) {
-        console.error('AI Text Sanitiser: Error during setData interception', err);
+  function applyPatches(win) {
+    if (!win || win.__ai_patched) return;
+    try {
+      Object.defineProperty(win, '__ai_patched', { value: true, enumerable: false });
+    } catch (e) { return; }
+
+    const nav = win.navigator;
+    
+    // 1. Intercept Clipboard.prototype.writeText and navigator.clipboard.writeText
+    const writeTextHandler = (target, thisArg, args) => {
+      let text = args[0];
+      console.log('🧹 [AI_Text_Sanitiser] Intercepted writeText!', { active: settings.activeForPage, text: typeof text === 'string' ? text.substring(0, 50) + '...' : text });
+      if (settings.activeForPage && typeof text === 'string') {
+        const { cleaned, removals } = sanitize(text);
+        reportRemovals(removals, text, cleaned);
+        args[0] = cleaned;
       }
-      return originalSetData.apply(this, [type, targetValue]);
+      return Reflect.apply(target, thisArg, args);
     };
+
+    if (win.Clipboard && win.Clipboard.prototype && win.Clipboard.prototype.writeText) {
+      patchFunction(win.Clipboard.prototype, 'writeText', writeTextHandler);
+    }
+    if (nav && nav.clipboard && nav.clipboard.writeText) {
+      patchFunction(nav.clipboard, 'writeText', writeTextHandler);
+    }
+
+    // 2. Intercept Clipboard.prototype.write and navigator.clipboard.write
+    const writeHandler = (target, thisArg, args) => {
+      const data = args[0];
+      console.log('🧹 [AI_Text_Sanitiser] Intercepted write!', { active: settings.activeForPage, items: data });
+      if (!settings.activeForPage || !data || !Array.isArray(data)) {
+        return Reflect.apply(target, thisArg, args);
+      }
+
+      return (async () => {
+        const newItems = [];
+        const iterableData = Array.isArray(data) ? data : (data && typeof data[Symbol.iterator] === 'function' ? Array.from(data) : []);
+        for (const item of iterableData) {
+          if (item && item.types && typeof item.types.includes === 'function' && item.types.includes('text/plain') && typeof item.getType === 'function') {
+            try {
+              const blob = await item.getType('text/plain');
+              const text = await blob.text();
+              const { cleaned, removals } = sanitize(text);
+              reportRemovals(removals, text, cleaned);
+
+              const newTypes = {};
+              for (const type of Array.from(item.types)) {
+                if (type === 'text/plain') {
+                  newTypes[type] = new Blob([cleaned], { type: 'text/plain' });
+                } else if (type === 'text/html') {
+                  const htmlBlob = await item.getType(type);
+                  const htmlText = await htmlBlob.text();
+                  const { cleaned: cleanedHtml } = sanitize(htmlText);
+                  newTypes[type] = new Blob([cleanedHtml], { type: 'text/html' });
+                } else {
+                  newTypes[type] = await item.getType(type);
+                }
+              }
+              const Constructor = typeof item.constructor === 'function' ? item.constructor : win.ClipboardItem;
+              newItems.push(new Constructor(newTypes));
+            } catch (e) {
+              console.error('AI Text Sanitiser: Error processing ClipboardItem', e);
+              newItems.push(item);
+            }
+          } else {
+            newItems.push(item);
+          }
+        }
+        return Reflect.apply(target, thisArg, [newItems]);
+      })();
+    };
+
+    if (win.Clipboard && win.Clipboard.prototype && win.Clipboard.prototype.write) {
+      patchFunction(win.Clipboard.prototype, 'write', writeHandler);
+    }
+    if (nav && nav.clipboard && nav.clipboard.write) {
+      patchFunction(nav.clipboard, 'write', writeHandler);
+    }
+
+    // Aggressive re-patching to defeat frameworks (like Lit/Angular) that overwrite the instance methods later
+    if (nav && nav.clipboard) {
+      setInterval(() => {
+        if (nav.clipboard.writeText && !nav.clipboard.writeText.__ai_patched) {
+          console.log('🧹 [AI_Text_Sanitiser] Re-patching framework-overwritten writeText');
+          patchFunction(nav.clipboard, 'writeText', writeTextHandler);
+        }
+        if (nav.clipboard.write && !nav.clipboard.write.__ai_patched) {
+          console.log('🧹 [AI_Text_Sanitiser] Re-patching framework-overwritten write');
+          patchFunction(nav.clipboard, 'write', writeHandler);
+        }
+      }, 1000);
+    }
+
+    // 3. Intercept DataTransfer.prototype.setData (used in 'copy' events)
+    if (win.DataTransfer && win.DataTransfer.prototype && win.DataTransfer.prototype.setData) {
+      patchFunction(win.DataTransfer.prototype, 'setData', (target, thisArg, args) => {
+        const type = args[0];
+        let value = args[1];
+        if (settings.activeForPage && (type === 'text/plain' || type === 'text/html') && typeof value === 'string') {
+          const { cleaned, removals } = sanitize(value);
+          if (type === 'text/plain') reportRemovals(removals, value, cleaned);
+          args[1] = cleaned;
+        }
+        return Reflect.apply(target, thisArg, args);
+      });
+    }
+
+    // 4. Intercept Node.prototype.appendChild for synchronously patching hidden iframes
+    if (win.Node && win.Node.prototype && win.Node.prototype.appendChild) {
+      patchFunction(win.Node.prototype, 'appendChild', (target, thisArg, args) => {
+        const result = Reflect.apply(target, thisArg, args);
+        const node = args[0];
+        if (node && node.tagName === 'IFRAME' && node.contentWindow) {
+          try { applyPatches(node.contentWindow); } catch(e) {}
+        }
+        return result;
+      });
+    }
+  }
+
+  // Apply to main window
+  applyPatches(window);
+
+  // Apply to dynamically created iframes using MutationObserver
+  function setupObserver() {
+    const observer = new MutationObserver(mutations => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node.tagName === 'IFRAME') {
+            try {
+              if (node.contentWindow) applyPatches(node.contentWindow);
+              node.addEventListener('load', () => {
+                try {
+                  if (node.contentWindow) applyPatches(node.contentWindow);
+                } catch (e) {}
+              });
+            } catch (e) {}
+          }
+        }
+      }
+    });
+    observer.observe(document, { childList: true, subtree: true });
+  }
+
+  if (document.body || document.head) {
+    setupObserver();
+  } else {
+    document.addEventListener('DOMContentLoaded', setupObserver);
   }
 
   // Listen for settings from the isolated world

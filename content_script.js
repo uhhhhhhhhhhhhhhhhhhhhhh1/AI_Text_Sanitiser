@@ -239,7 +239,10 @@
     const text = selection?.toString() || '';
     if (text) return text;
 
-    const active = document.activeElement;
+    let active = document.activeElement;
+    while (active && active.shadowRoot && active.shadowRoot.activeElement) {
+      active = active.shadowRoot.activeElement;
+    }
     if (!active) return '';
 
     if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {

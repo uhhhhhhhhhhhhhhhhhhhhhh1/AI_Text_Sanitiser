@@ -5,7 +5,7 @@
 // Use var to ensure variables are available globally in the script context
 var DEFAULT_SITES = ['*.chatgpt.com', '*.deepseek.com', '*.claude.ai', '*.gemini.google.com', 'gemini.google.com'];
 var emojiRegex = /\p{Extended_Pictographic}/u;
-var citationRegex = /\[cite_start\]|\[cite:\s*\d+\]|\[\d+\]|\^\[?\d+\]?/g;
+var citationRegex = /\[cite_start\]|\[cite:\s*\d+(?:,\s*\d+)*\]|\[\d+\]|\^\[?\d+\]?/g;
 
 var unicodeDatabase = {
   'U+0020': { name: 'SPACE', category: 'Whitespace' },
